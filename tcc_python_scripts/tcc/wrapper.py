@@ -148,6 +148,7 @@ class TCCWrapper:
         if subprocess_result.returncode == 0:
             return self._parse_static_clusters()
         else:
+            print(subprocess_result)
             self.__del__()
             print("Error: TCC was not able to run.")
             raise Exception
@@ -308,7 +309,7 @@ class TCCWrapper:
         if self.clusters_to_analyse: return self.clusters_to_analyse
         else: return structures.cluster_list
 
-    def get_cluster_dict(self, cluster_names=None):
+    def get_cluster_dict(self, cluster_names=None, amount=False):
         """
         Getting the result of particles and the clusters they are in. The
             example output would be like.
@@ -357,17 +358,25 @@ class TCCWrapper:
             [False, False, False]
 
         """
+
         raw_out_folder = os.path.join(self.working_directory, 'raw_output')
         if not os.path.isdir(raw_out_folder):
             raise FileNotFoundError(
                 "No raw_output data, set [Output][Raw] to True and run again"
             )
 
+        if amount:
+            clusts_out_folder = os.path.join(self.working_directory, 'cluster_output')
+            if not os.path.isdir(clusts_out_folder):
+                raise FileNotFoundError(
+                    "No clusts_output data, set output_clusters=True and run again"
+                )
+
         # collect the cluster names if not provided
         if isinstance(cluster_names, type(None)):
             cluster_name_pattern = re.compile(r'sample\.xyz.*raw_(.+)')
             filenames = glob(
-                "{folder}/sample.xyz*raw_*".format(folder=raw_out_folder)
+                f"{raw_out_folder}/sample.xyz*raw_*"
             )
             filenames = [os.path.basename(fn) for fn in filenames]
             filenames.sort()
@@ -394,9 +403,7 @@ class TCCWrapper:
         result = {}
         for cn in cluster_names:
             fn = glob(
-                "{folder}/sample.xyz*raw_{cluster_name}".format(
-                    folder=raw_out_folder, cluster_name=cn
-                )
+                f"{raw_out_folder}/sample.xyz*raw_{cn}"
             )
             if len(fn) == 0:
                 raise FileNotFoundError(
@@ -406,16 +413,68 @@ class TCCWrapper:
                 )
             else:
                 fn = fn[0]
-            is_in_cluster = xyz.get_frames_from_xyz(
-                filename=fn, usecols=[0],
-                # particle labelled as C and D were considered in the cluster
-                convert_func=lambda x : x in ['C', 'D']
-            )
-            result.update({cn : is_in_cluster})
+
+            if amount:
+                fn_clusts = glob(
+                    f"{clusts_out_folder}/sample.xyz*clusts_{cn}"
+                )
+                if len(fn_clusts) == 0:
+                    raise FileNotFoundError(
+                        "Cluster output file for cluster {cluster} not found".format(
+                            cluster = cn
+                        )
+                    )
+                else:
+                    fn_clusts = fn_clusts[0]
+
+            if not amount:
+                is_in_cluster = xyz.get_frames_from_xyz(
+                    filename=fn, usecols=[0],
+                    # particle labelled as C and D were considered in the cluster
+                    convert_func=lambda x : x in ['C', 'D']
+                )
+                result.update({cn : is_in_cluster})
+            else:
+                is_in_cluster = xyz.get_frames_from_xyz(
+                    filename=fn, usecols=[0],
+                    # particle labelled as C and D were considered in the cluster
+                    convert_func=lambda x : x in ['C', 'D']
+                )
+
+                particle_num = is_in_cluster[0].shape[0]
+                is_in_cluster = self.count_particles(filename=fn_clusts, particle_num=particle_num)
+                result.update({cn : is_in_cluster})
 
         return result
 
-    def get_cluster_table(self, cluster_names=None):
+    def count_particles(self, filename, particle_num):
+        """
+        count particles ids in a file
+
+        Args:
+            filename (str): the path of the file to load
+
+        Return:
+            list: a list of frames. Each frame is a numpy array,
+                shape (n_particle, 1).
+        """
+        f = open(filename, 'r')
+        frames = []
+        for line in f:
+            is_head = re.match(r'Frame Number (\d+)\n', line)
+            if is_head:
+                frames.append(numpy.zeros(particle_num))
+                for j in range(particle_num):
+                    data = re.split(r'\s', f.readline())
+                    data = [int(col) for i, col in enumerate(data[:-1])]
+                    count = numpy.zeros(particle_num)
+                    count[data] = 1.0
+                    frames[-1] += count
+                frames[-1] = numpy.array(frames[-1])
+        f.close()
+        return frames
+
+    def get_cluster_table(self, cluster_names=None, amount=False):
         """
         Getting the result of particles and the clusters they are in. The
             output is a list of Boolean tables for many frames. A typical
@@ -461,7 +520,7 @@ class TCCWrapper:
             3  False  False
             4  False  False
         """
-        cluster_dict = self.get_cluster_dict(cluster_names)
+        cluster_dict = self.get_cluster_dict(cluster_names, amount=amount)
         frame_nums = []
         for cn, frames in cluster_dict.items():
             frame_nums.append(len(frames))
@@ -472,6 +531,7 @@ class TCCWrapper:
                 "Inconsistent frame sizes, this is a bug of the TCC wrapper"
             )
         # convert the dictionary to a list of table
+
         result = []
         for f in range(frame_num):
             data = { key : frame[f].flatten() for key, frame in cluster_dict.items() }
