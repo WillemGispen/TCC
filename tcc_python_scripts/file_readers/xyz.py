@@ -27,8 +27,9 @@ class XYZSnapshot(Snapshot):
             # Read the header - check for EOF.
             number_of_particles = self._process_number_of_particles(input_file)
 
-            # Read and igore the comment line
-            input_file.readline()
+            # Read box from the comment line
+            line = (input_file.readline())
+            self.box = [float(L.replace('"', '')) for L in line.split()[1::4]]
 
             # Use pandas to read the main table.
             string_buffer = io.StringIO()
@@ -43,7 +44,7 @@ class XYZSnapshot(Snapshot):
                 raise SnapshotIncompleteError
             self.particle_coordinates = table[['x', 'y', 'z']].values.copy('c').astype(numpy.longdouble)
             self.species = table['atom'].tolist()
-            self.time = self.box = None
+            self.time = None
 
     @staticmethod
     def _process_number_of_particles(file):
