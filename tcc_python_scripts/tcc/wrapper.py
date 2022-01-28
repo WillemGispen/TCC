@@ -143,7 +143,10 @@ class TCCWrapper:
         if silent:
             subprocess_result = subprocess.run(self.tcc_executable_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=self.working_directory)
         else:
-            subprocess_result = subprocess.run(self.tcc_executable_path, cwd=self.working_directory)
+            # subprocess_result = subprocess.run(self.tcc_executable_path, cwd=self.working_directory)
+            subprocess_result = subprocess.Popen(self.tcc_executable_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.working_directory)
+            stdout = subprocess_result.communicate()[0]
+            print(stdout)
 
         if subprocess_result.returncode == 0:
             return self._parse_static_clusters()
