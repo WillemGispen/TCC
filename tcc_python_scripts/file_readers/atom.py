@@ -44,17 +44,19 @@ class AtomSnapshot(Snapshot):
                 elif ' '.join(item[1:3]) == 'BOX BOUNDS':
                     num_spatial_dimensions = len(item[3:])
                     self.particle_coordinates = numpy.empty((self.num_particles, num_spatial_dimensions))
-                    self.box = numpy.zeros((num_spatial_dimensions, 2), dtype=numpy.float64)
+                    self.box_ = numpy.zeros((num_spatial_dimensions, 2), dtype=numpy.float64)
+                    self.box = numpy.zeros(num_spatial_dimensions, dtype=numpy.float64)
 
                     for dimension in range(num_spatial_dimensions):
                         boundary = f.readline().split()
-                        self.box[dimension][:] = [float(b) for b in boundary]
+                        self.box_[dimension][:] = [float(b) for b in boundary]
+                        self.box[dimension] = self.box_[dimension][1] - self.box_[dimension][0]
 
                 # Main table contains the per-atom data. Should come at the end.
                 elif item[1] == 'ATOMS':
                     assert self.num_particles > 0
                     assert 1 <= self.dimensionality <= 3
-                    assert self.box is not None
+                    assert self.box_ is not None
 
                     headings = item[2:]
                     assert 'id' in headings
@@ -67,16 +69,18 @@ class AtomSnapshot(Snapshot):
                     table = pandas.read_table(particle_buffer, index_col=0, sep='\s+', names=headings,
                                               nrows=self.num_particles)
 
+                    # map particle coordinates to [0, side_length]
                     if 'xs' in headings:
                         cols = ['xs', 'ys', 'zs'][:self.dimensionality]
                         self.particle_coordinates = table[cols].values.copy('c').astype(numpy.float64)
                         for dimension in range(self.dimensionality):
-                            side_length = self.box[dimension][1] - self.box[dimension][0]
+                            side_length = self.box[dimension]
                             self.particle_coordinates[:, dimension] *= side_length
-                            self.particle_coordinates[:, dimension] += self.box[dimension][0]
                     else:
                         cols = ['x', 'y', 'z'][:self.dimensionality]
                         self.particle_coordinates = table[cols].values.copy('c').astype(numpy.float64)
+                        for dimension in range(self.dimensionality):
+                            self.particle_coordinates[:, dimension] -= self.box_[dimension][0]
 
                     self.species = numpy.array(table['type'])
                     return
