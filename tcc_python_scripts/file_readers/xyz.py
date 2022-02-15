@@ -28,8 +28,19 @@ class XYZSnapshot(Snapshot):
             number_of_particles = self._process_number_of_particles(input_file)
 
             # Read box from the comment line
-            line = (input_file.readline())
-            self.box = [float(L.replace('"', '')) for L in line.split()[1::4]]
+            exyz = True
+            atom_type = False
+
+            if exyz:
+                line = (input_file.readline())
+                lattice = line[line.find('Lattice="') + len('Lattice="'):]
+                lattice = lattice[:lattice.find('"')].split()
+                self.box = [float(L) for L in lattice[::4]]
+            else:
+                self.box = []
+                for i in range(3):
+                    line = (input_file.readline())
+                    self.box += [float(line.split()[1]) - float(line.split()[0]),]
 
             # Use pandas to read the main table.
             string_buffer = io.StringIO()
@@ -39,11 +50,17 @@ class XYZSnapshot(Snapshot):
                     raise SnapshotIncompleteError("Error reading XYZ file on line number {}".format(line_number))
                 string_buffer.write(line)
             string_buffer.seek(0)
-            table = pandas.read_table(string_buffer, sep='\s+', names=('atom', 'x', 'y', 'z'), nrows=number_of_particles)
+            if atom_type:
+                table = pandas.read_table(string_buffer, sep='\s+', names=('atom', 'x', 'y', 'z'), nrows=number_of_particles)
+            else:
+                table = pandas.read_table(string_buffer, sep='\s+', names=('x', 'y', 'z', 'r'), nrows=number_of_particles)
             if table.shape[0] != number_of_particles:
                 raise SnapshotIncompleteError
             self.particle_coordinates = table[['x', 'y', 'z']].values.copy('c').astype(numpy.longdouble)
-            self.species = table['atom'].tolist()
+            try:
+                self.species = table['atom'].tolist()
+            except:
+                self.species = number_of_particles * ['A']
             self.time = None
 
     @staticmethod
@@ -160,7 +177,7 @@ def check_coordinates_type(coordinates):
         >>> check_coordinates_type(coord)
         2
         >>> # 3 frames with different particle numbers in each frame
-        >>> coord = [np.ones((10, 3)), np.ones((20, 3)), np.ones((20, 3))] 
+        >>> coord = [np.ones((10, 3)), np.ones((20, 3)), np.ones((20, 3))]
         >>> check_coordinates_type(coord)
         3
     """
