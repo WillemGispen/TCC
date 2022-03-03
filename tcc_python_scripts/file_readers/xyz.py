@@ -28,33 +28,46 @@ class XYZSnapshot(Snapshot):
             number_of_particles = self._process_number_of_particles(input_file)
 
             # Read box from the comment line
-            exyz = True
-            atom_type = False
-
-            if exyz:
+            try:
                 line = (input_file.readline())
                 lattice = line[line.find('Lattice="') + len('Lattice="'):]
                 lattice = lattice[:lattice.find('"')].split()
                 self.box = [float(L) for L in lattice[::4]]
-            else:
-                self.box = []
-                for i in range(3):
-                    line = (input_file.readline())
-                    self.box += [float(line.split()[1]) - float(line.split()[0]),]
+            except:
+                try:
+                    self.box = []
+                    for i in range(3):
+                        line = (input_file.readline())
+                        self.box += [float(line.split()[1]) - float(line.split()[0]),]
+                except:
+                    raise ValueError
+                    self.box = [1.0, 1.0, 1.0]
 
             # Use pandas to read the main table.
             string_buffer = io.StringIO()
             for line_number in range(number_of_particles):
                 line = (input_file.readline())
-                if len(line.split()) != 4:
+                
+                if line_number == 0:
+                    ref_len = len(line.split())
+                    try:
+                        float(line.split()[0])
+                        atom_type = False
+                    except:
+                        atom_type = True
+
+                if len(line.split()) != ref_len:
                     raise SnapshotIncompleteError("Error reading XYZ file on line number {}".format(line_number))
                 string_buffer.write(line)
             string_buffer.seek(0)
+            table = pandas.read_table(string_buffer, sep='\s+', nrows=number_of_particles, header=None)
+
             if atom_type:
-                table = pandas.read_table(string_buffer, sep='\s+', names=('atom', 'x', 'y', 'z'), nrows=number_of_particles)
+                table.rename(columns={0: 'atom', 1: 'x', 2: 'y', 3: 'z'}, inplace=True)
             else:
-                table = pandas.read_table(string_buffer, sep='\s+', names=('x', 'y', 'z', 'r'), nrows=number_of_particles)
+                table.rename(columns={0: 'x', 1: 'y', 2: 'z'}, inplace=True)
             if table.shape[0] != number_of_particles:
+                print(f'XYZ coordinates table shape {table.shape} does not match number of particles {number_of_particles}')
                 raise SnapshotIncompleteError
             self.particle_coordinates = table[['x', 'y', 'z']].values.copy('c').astype(numpy.longdouble)
             try:
