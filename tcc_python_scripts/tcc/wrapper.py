@@ -523,6 +523,7 @@ class TCCWrapper:
             3  False  False
             4  False  False
         """
+        print(cluster_names, self.clusters_to_analyse)
         cluster_dict = self.get_cluster_dict(cluster_names, amount=amount)
         frame_nums = []
         for cn, frames in cluster_dict.items():

@@ -4,33 +4,52 @@
 #include "bonds.h"
 #include "tools.h"
 
+
 //!  An 7B cluster is an 6A cluster with an extra particle attached.
 /*!
 *  Find 7B clusters
 *  An 7B is a 6A cluster with an extra particle bonded to two of the ring particles and a spindle of the 6A cluster
 *
+*  To do: write correct output cluster
 *  Cluster output: BBBBOOB
 *  Storage order: as for 6A x 6, extra_particle)
 */
 void Clusters_Get7B() {
     for (int first_6A_id = 0; first_6A_id < nsp4c; ++first_6A_id) {
         int *first_6A_cluster = hcsp4c[first_6A_id];
-        for (int spindle_pointer = 0; spindle_pointer < 2; ++spindle_pointer) {
-            int primary_spindle = first_6A_cluster[4 + spindle_pointer];
+        int spindle = first_6A_cluster[4 + 0];
+        int spindle_ = first_6A_cluster[4 + 1];
 
-            for (int new_particle_pointer = 0; new_particle_pointer < num_bonds[primary_spindle]; ++new_particle_pointer) {
-                int new_particle_id = bond_list[primary_spindle][new_particle_pointer];
+        for (int new_particle_pointer = 0; new_particle_pointer < num_bonds[spindle]; ++new_particle_pointer) {
+            int new_particle_id = bond_list[spindle][new_particle_pointer];
+            for (int new_particle_pointer_ = 0; new_particle_pointer_ < num_bonds[spindle_]; ++new_particle_pointer_) {
+                int new_particle_id_ = bond_list[spindle_][new_particle_pointer_];
 
-                if(is_particle_in_cluster(first_6A_cluster, 6, new_particle_id) == 0) {
+                int not_in_6A = (is_particle_in_cluster(first_6A_cluster, 6, new_particle_id) == 0);
+                int not_in_6A_ = (is_particle_in_cluster(first_6A_cluster, 6, new_particle_id_) == 0);
+                int bonded_new = Bonds_BondCheck(new_particle_id, new_particle_id_);
+                int bonded_spindle = Bonds_BondCheck(spindle, spindle_);
 
-                    if (count_bonds_to_6A_ring(first_6A_id, new_particle_id) == 2) {
-
+                if(not_in_6A && not_in_6A && bonded_new) { // &&  && bonded_spindle
+                    if (count_double_bonds_to_6A_ring(first_6A_id, new_particle_id, new_particle_id_) == 2) {
                         Cluster_Write_7B(first_6A_cluster, new_particle_id);
                     }
                 }
             }
         }
     }
+}
+
+int count_double_bonds_to_6A_ring(int first_6A_id, int new_particle_id, int new_particle_id_) {
+    int num_bonds_to_ring = 0;
+    for (int ring_pointer = 0; ring_pointer < 4; ++ring_pointer) {
+        if (Bonds_BondCheck(new_particle_id, hcsp4c[first_6A_id][ring_pointer])) {
+            if (Bonds_BondCheck(new_particle_id, hcsp4c[first_6A_id][ring_pointer])) {
+                ++num_bonds_to_ring;
+            }
+        }
+    }
+    return num_bonds_to_ring;
 }
 
 int count_bonds_to_6A_ring(int first_6A_id, int new_particle_id) {
