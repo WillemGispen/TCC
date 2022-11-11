@@ -8,13 +8,15 @@
 //!  An 7B cluster is an 6A cluster with an extra particle attached.
 /*!
 *  Find 7B clusters
-*  An 7B is a 6A cluster with an extra particle bonded to two of the ring particles and a spindle of the 6A cluster
+*  A square sp5c is a 6A cluster with an extra particle bonded to two ring particles and a spindle of the 6A cluster
+*  A square 8a is a 6A cluster with two extra particles, both bonded to a different spindle, and both bonded to the same two ring particles
 *
 *  To do: write correct output cluster
 *  Cluster output: BBBBOOB
 *  Storage order: as for 6A x 6, extra_particle)
 */
 void Clusters_Get7B() {
+    // SQUARE 8A:
     for (int first_6A_id = 0; first_6A_id < nsp4c; ++first_6A_id) {
         int *first_6A_cluster = hcsp4c[first_6A_id];
         int spindle = first_6A_cluster[4 + 0];
@@ -27,10 +29,8 @@ void Clusters_Get7B() {
 
                 int not_in_6A = (is_particle_in_cluster(first_6A_cluster, 6, new_particle_id) == 0);
                 int not_in_6A_ = (is_particle_in_cluster(first_6A_cluster, 6, new_particle_id_) == 0);
-                int bonded_new = Bonds_BondCheck(new_particle_id, new_particle_id_);
-                int bonded_spindle = Bonds_BondCheck(spindle, spindle_);
 
-                if(not_in_6A && not_in_6A && bonded_new) { // &&  && bonded_spindle
+                if(not_in_6A && not_in_6A) {
                     if (count_double_bonds_to_6A_ring(first_6A_id, new_particle_id, new_particle_id_) == 2) {
                         Cluster_Write_7B(first_6A_cluster, new_particle_id);
                     }
@@ -38,13 +38,32 @@ void Clusters_Get7B() {
             }
         }
     }
+
+    // SQUARE SP5c:
+    // for (int first_6A_id = 0; first_6A_id < nsp4c; ++first_6A_id) {
+    //     int *first_6A_cluster = hcsp4c[first_6A_id];
+    //     for (int spindle_pointer = 0; spindle_pointer < 2; ++spindle_pointer) {
+    //         int primary_spindle = first_6A_cluster[4 + spindle_pointer];
+
+    //         for (int new_particle_pointer = 0; new_particle_pointer < num_bonds[primary_spindle]; ++new_particle_pointer) {
+    //             int new_particle_id = bond_list[primary_spindle][new_particle_pointer];
+
+    //             if(is_particle_in_cluster(first_6A_cluster, 6, new_particle_id) == 0) {
+    //                 if (count_bonds_to_6A_ring(first_6A_id, new_particle_id) == 2) {
+    //                     Cluster_Write_7B(first_6A_cluster, new_particle_id);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
 }
 
 int count_double_bonds_to_6A_ring(int first_6A_id, int new_particle_id, int new_particle_id_) {
     int num_bonds_to_ring = 0;
     for (int ring_pointer = 0; ring_pointer < 4; ++ring_pointer) {
         if (Bonds_BondCheck(new_particle_id, hcsp4c[first_6A_id][ring_pointer])) {
-            if (Bonds_BondCheck(new_particle_id, hcsp4c[first_6A_id][ring_pointer])) {
+            if (Bonds_BondCheck(new_particle_id_, hcsp4c[first_6A_id][ring_pointer])) {
                 ++num_bonds_to_ring;
             }
         }
