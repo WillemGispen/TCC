@@ -4,7 +4,7 @@
 cluster_list = ["sp3a", "sp3b", "sp3c", "sp4a", "sp4b", "sp4c", "sp5a", "sp5b", "sp5c",
                 "6A", "6Z", "7K", "7T_a", "7T_s", "8A", "8B", "8K", "9A", "9B", "9K", "10A", "10B",
                 "10K", "10W", "11A", "11B", "11C", "11E", "11F", "11W", "12A", "12B", "12D",
-                "12E", "12K", "13A", "13B", "13K", "FCC", "HCP", "BCC_9"]
+                "12E", "12K", "13A", "13B", "13K", "FCC", "HCP", "BCC_9", 'BCC_15']
 
 # Clusters are defined as the minimum energy structure for a particular potential.
 # Each cluster should normally be detected as a single instance of itself however, some clusters are
