@@ -23,9 +23,6 @@ void Clusters_GetBCC_15() {
     count1=count2=count3=count4=0;
 
     for (int central_particle = 0; central_particle < particles_in_current_frame; central_particle++) {
-        printf("%d ", central_particle);
-
-        // if (central_particle > 0) break;
 
         // check that central spindle is part of at least six sp4c clusters
         if (nmem_sp4c[central_particle] < 6) continue;
@@ -53,11 +50,11 @@ void Clusters_GetBCC_15() {
 
         // check common particles between sp4c clusters
         flg = 0;
-        for (i=0; i<5; ++i) {
+        for (i=0; i<6; ++i) {
             int ncom1 = 0;
             int ncom3 = 0;
-            for (j=i+1; j<6; ++j) {
-                // if (i == j) continue;
+            for (j=0; j<6; ++j) {
+                if (i == j) continue;
                 int *sp4c_cluster = hcsp4c[sp4c_ids[i]];
                 int *sp4c_cluster_ = hcsp4c[sp4c_ids[j]];
 
@@ -70,7 +67,6 @@ void Clusters_GetBCC_15() {
                         }
                     }
                 }
-                
                 if (ncom!=1 && ncom!=3) {
                     flg = 1;
                     count2++;
@@ -96,24 +92,20 @@ void Clusters_GetBCC_15() {
                 if (ncom == 1) {
                     ncom1++;
                 }
-                if (ncom == 3) {
-                    ncom3++;
-                }
             }
-            // if (ncom1 != 1) {
-            //     count4++;
-            //     flg = 1;
-            //     break;
-            // }
+            if (ncom1 != 1) {
+                count4++;
+                flg = 1;
+                break;
+            }
             if (flg==1) break;
         }
-
         if (flg == 1) continue;
 
-        // TODO: output
+        // TODO: output right particle ID's
         trial[0] = central_particle;
-        for (i=1; i<15; k++) {
-            trial[i]= central_particle;
+        for (i=1; i<15; i++) {
+            trial[i] = central_particle;
         }
 
         if (nBCC_15 == mBCC_15) {
@@ -124,8 +116,7 @@ void Clusters_GetBCC_15() {
 
         Cluster_Write_BCC15();
     }
-    printf("                                                   ");
-    printf("%d %d %d %d", count1, count2, count3, count4);
+    // printf("%d %d %d %d", count1, count2, count3, count4);
 }
 
 

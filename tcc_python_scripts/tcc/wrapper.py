@@ -1,6 +1,7 @@
 """Python interface to the TCC executable."""
 
 import os
+import sys
 import re
 import tempfile
 import shutil
@@ -145,6 +146,9 @@ class TCCWrapper:
         else:
             # subprocess_result = subprocess.run(self.tcc_executable_path, cwd=self.working_directory)
             subprocess_result = subprocess.Popen(self.tcc_executable_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.working_directory)
+            # subprocess_result = subprocess.Popen(self.tcc_executable_path, stdout=sys.stdout, stderr=subprocess.STDOUT, cwd=self.working_directory)
+            # subprocess_result = subprocess.check_call(self.tcc_executable_path, shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT, cwd=self.working_directory)
+            # subprocess_result.returncode = subprocess_result
             stdout = subprocess_result.communicate()[0]
             print(stdout)
 

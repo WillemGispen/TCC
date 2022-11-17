@@ -22,6 +22,7 @@ voronoi_short_clusters['7T_a'] = 2      # Detected twice due to symmetry
 voronoi_short_clusters['7T_s'] = 3      # Detected 3 times due to symmetry
 voronoi_short_clusters['7K'] = 0        # Not detected due to lack of long bonds
 voronoi_short_clusters['8K'] = 0        # Not detected due to lack of long bonds
+voronoi_short_clusters['BCC_15'] = 0        # Not detected due to lack of long bonds
 
 voronoi_long_clusters = {cluster: 1 for cluster in cluster_list}
 voronoi_long_clusters['sp3b'] = 4       # Detected 4 times due to rotational symmetry
